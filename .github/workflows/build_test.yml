@@ -1,0 +1,42 @@
+---
+name: Build-Test
+
+on:
+  push:
+  pull_request:
+
+
+jobs:
+  build:
+    name: Install Niviz dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          pip install -q -e .[buildtest]
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --statistics
+      - name: Run pytest and generate coverage report
+        run: |
+          cd niviz
+          pip install pytest-cov
+          pytest --cov=./ --cov-report=xml tests/
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
+          files: ./niviz/coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          verbose: true
